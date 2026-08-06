@@ -1,0 +1,61 @@
+import fitz
+from fastapi.testclient import TestClient
+
+from app.main import app
+
+
+def _pdf_with_text(text: str = "Hello document agent") -> bytes:
+    document = fitz.open()
+    page = document.new_page()
+    page.insert_text((72, 72), text)
+    content = document.tobytes()
+    document.close()
+    return content
+
+
+def test_health_returns_ok() -> None:
+    client = TestClient(app)
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_parse_extracts_text_from_pdf() -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/parse",
+        files={"file": ("demo.pdf", _pdf_with_text(), "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_pages"] == 1
+    assert body["pages_processed"] == 1
+    assert body["pages"][0]["items"][0]["content"] == "Hello document agent"
+
+
+def test_parse_rejects_non_pdf_upload() -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/parse",
+        files={"file": ("notes.txt", b"not a PDF", "text/plain")},
+    )
+
+    assert response.status_code == 415
+    assert response.json()["detail"] == "Please upload a PDF file."
+
+
+def test_parse_returns_422_for_invalid_pdf() -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/parse",
+        files={"file": ("invalid.pdf", b"not a valid PDF", "application/pdf")},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Unable to parse this PDF."
