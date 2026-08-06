@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Document Agent Demo</title>
+    <title>Document Intelligence Agent</title>
     <style>
       :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #172033; background: #f6f8fc; }
       body { margin: 0; } main { max-width: 960px; padding: 48px 24px 72px; margin: auto; }
@@ -19,12 +19,20 @@
   </head>
   <body>
     <main>
-      <h1>Document Agent</h1>
-      <p class="lead">A privacy-safe demo that combines structured catalog filters with text-based PDF extraction. Uploads are processed in memory and never stored.</p>
+      <h1>Document Intelligence Agent</h1>
+      <p class="lead">Ask one question, and the agent selects structured retrieval, PDF extraction, or both. Every result includes its tool trace and source evidence.</p>
       <div class="grid">
         <section>
-          <h2>1. Search a demo catalog</h2>
-          <p class="note">Shows deterministic filters and an <code>All</code> wildcard - a complement to semantic RAG retrieval.</p>
+          <h2>Ask the agent</h2>
+          <p class="note">Try “Find Build security documents”, or attach a text-based PDF for page-level evidence. No external model key is required.</p>
+          <label>Question <input id="question" maxlength="1000" placeholder="What document or information do you need?" /></label>
+          <label>Optional PDF <input id="agent-pdf" type="file" accept="application/pdf" /></label>
+          <button id="ask">Run agent</button>
+          <pre id="agent-result">The agent will show its route, tool calls and citations here.</pre>
+        </section>
+        <section>
+          <h2>Direct catalog search</h2>
+          <p class="note">Use deterministic filters and an <code>All</code> wildcard when you already know the exact conditions.</p>
           <label>Lifecycle stage <select id="stage"><option value="">Any stage</option><option>Plan</option><option>Build</option><option>Operate</option></select></label>
           <label>Topic <select id="topic"><option value="">Any topic</option><option>Security</option><option>Quality</option><option>Delivery</option></select></label>
           <label>Effective from <input id="effective" type="date" /></label>
@@ -32,8 +40,8 @@
           <pre id="search-result">Choose filters and run a search.</pre>
         </section>
         <section>
-          <h2>2. Extract a PDF</h2>
-          <p class="note">For text-based PDFs only. The demo returns page-level text blocks, table rows and bounding boxes.</p>
+          <h2>Direct PDF extraction</h2>
+          <p class="note">For text-based PDFs. Returns page-level text blocks, table rows and bounding boxes.</p>
           <label>Select PDF <input id="pdf" type="file" accept="application/pdf" /></label>
           <button id="parse">Extract structure</button>
           <pre id="parse-result">No PDF selected.</pre>
@@ -43,6 +51,15 @@
     </main>
     <script>
       const render = (id, body) => document.getElementById(id).textContent = JSON.stringify(body, null, 2);
+      document.getElementById('ask').onclick = async () => {
+        const question = document.getElementById('question').value.trim();
+        if (question.length < 3) return render('agent-result', { detail: 'Enter a question with at least 3 characters.' });
+        const form = new FormData(); form.append('question', question);
+        const file = document.getElementById('agent-pdf').files[0];
+        if (file) form.append('file', file);
+        const response = await fetch('/api/ask', { method:'POST', body:form });
+        render('agent-result', await response.json());
+      };
       document.getElementById('search').onclick = async () => {
         const payload = { lifecycle_stage: stage.value || null, topic: topic.value || null, effective_from: effective.value || null };
         const response = await fetch('/api/search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
