@@ -59,3 +59,30 @@ def test_parse_returns_422_for_invalid_pdf() -> None:
 
     assert response.status_code == 422
     assert response.json()["detail"] == "Unable to parse this PDF."
+
+
+def test_agent_routes_catalog_question_to_search() -> None:
+    client = TestClient(app)
+
+    response = client.post("/api/ask", data={"question": "Find Build security documents"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["route"] == "catalog_search"
+    assert body["tool_calls"][0]["tool"] == "catalog_search"
+    assert body["results"]
+
+
+def test_agent_returns_pdf_page_citations() -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/ask",
+        data={"question": "Summarize this uploaded document"},
+        files={"file": ("evidence.pdf", _pdf_with_text("Page evidence"), "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["route"] == "hybrid"
+    assert any(citation["page"] == 1 for citation in body["citations"])
