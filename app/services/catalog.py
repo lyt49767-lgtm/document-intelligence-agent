@@ -5,7 +5,7 @@ structured metadata filters complement semantic PDF retrieval.
 """
 
 import json
-from datetime import date
+from functools import lru_cache
 from pathlib import Path
 
 from app.models import CatalogDocument, CatalogSearch
@@ -13,9 +13,11 @@ from app.models import CatalogDocument, CatalogSearch
 DATA_PATH = Path(__file__).resolve().parents[2] / "sample_data" / "catalog.json"
 
 
-def load_catalog() -> list[CatalogDocument]:
+@lru_cache
+def load_catalog() -> tuple[CatalogDocument, ...]:
+    """Load and validate the static demo catalog once per process."""
     raw = json.loads(DATA_PATH.read_text(encoding="utf-8"))
-    return [CatalogDocument.model_validate(item) for item in raw]
+    return tuple(CatalogDocument.model_validate(item) for item in raw)
 
 
 def _matches_tag(values: list[str], requested: str | None) -> bool:
