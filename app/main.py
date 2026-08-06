@@ -2,12 +2,13 @@ import logging
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.models import CatalogSearch
+from app.services.agent import run_agent
 from app.services.catalog import load_catalog, search_catalog
 from app.services.pdf_extract import extract_pdf
 
@@ -17,9 +18,11 @@ logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Document Agent Demo",
-    version="1.0.0",
-    description="A privacy-safe demo for PDF structure extraction and catalog retrieval.",
+    title="Document Intelligence Agent",
+    version="1.1.0",
+    description=(
+        "A deployable, traceable agent for document retrieval and PDF structure extraction."
+    ),
 )
 app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 
@@ -45,8 +48,7 @@ def search(filters: CatalogSearch) -> dict:
     return {"count": len(results), "results": [item.model_dump(mode="json") for item in results]}
 
 
-@app.post("/api/parse")
-async def parse_pdf(file: Annotated[UploadFile, File(...)]) -> dict:
+async def _extract_upload(file: UploadFile) -> dict:
     if file.content_type not in {"application/pdf", "application/x-pdf"}:
         raise HTTPException(status_code=415, detail="Please upload a PDF file.")
     content = await file.read(settings.max_upload_bytes + 1)
@@ -67,3 +69,19 @@ async def parse_pdf(file: Annotated[UploadFile, File(...)]) -> dict:
     except Exception as exc:
         logger.warning("pdf_parse_failed filename=%s", file.filename, exc_info=exc)
         raise HTTPException(status_code=422, detail="Unable to parse this PDF.") from exc
+
+
+@app.post("/api/parse")
+async def parse_pdf(file: Annotated[UploadFile, File(...)]) -> dict:
+    return await _extract_upload(file)
+
+
+@app.post("/api/ask")
+async def ask_agent(
+    question: Annotated[str, Form(min_length=3, max_length=1000)],
+    file: Annotated[UploadFile | None, File()] = None,
+) -> dict:
+    pdf_result = await _extract_upload(file) if file is not None else None
+    response = run_agent(question, pdf_result, file.filename or "" if file is not None else "")
+    logger.info("agent_routed route=%s tools=%s", response.route, len(response.tool_calls))
+    return response.model_dump(mode="json")
