@@ -23,7 +23,8 @@ Agent routing        → select the appropriate tool for a user question
 - Browser demo for catalog search and PDF extraction
 - In-memory PDF processing with a 12 MB upload limit
 - Public synthetic catalog data only
-- Tests for wildcard and date-filter behavior
+- Configuration through environment variables (`DOCUMENT_AGENT_*`)
+- API tests for PDF extraction and validation, plus Ruff and Mypy quality checks
 - Dockerfile, Docker Compose and GitHub Actions CI
 
 ## Run locally
@@ -40,6 +41,13 @@ uvicorn app.main:app --reload
 ```
 
 Open <http://localhost:8000>. API documentation is available at <http://localhost:8000/docs>.
+
+Optional runtime configuration:
+
+```bash
+export DOCUMENT_AGENT_MAX_PAGES=20
+export DOCUMENT_AGENT_LOG_LEVEL=DEBUG
+```
 
 ## Run with Docker
 
