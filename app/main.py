@@ -1,15 +1,20 @@
+import logging
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.config import get_settings
 from app.models import CatalogSearch
 from app.services.catalog import load_catalog, search_catalog
 from app.services.pdf_extract import extract_pdf
 
 APP_DIR = Path(__file__).resolve().parent
-MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+settings = get_settings()
+logging.basicConfig(level=settings.log_level)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Document Agent Demo",
@@ -41,13 +46,24 @@ def search(filters: CatalogSearch) -> dict:
 
 
 @app.post("/api/parse")
-async def parse_pdf(file: UploadFile = File(...)) -> dict:
+async def parse_pdf(file: Annotated[UploadFile, File(...)]) -> dict:
     if file.content_type not in {"application/pdf", "application/x-pdf"}:
         raise HTTPException(status_code=415, detail="Please upload a PDF file.")
-    content = await file.read(MAX_UPLOAD_BYTES + 1)
-    if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="PDF exceeds the 12 MB demo limit.")
+    content = await file.read(settings.max_upload_bytes + 1)
+    if len(content) > settings.max_upload_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"PDF exceeds the {settings.max_upload_bytes // 1024 // 1024} MB demo limit.",
+        )
     try:
-        return extract_pdf(content)
+        result = extract_pdf(content, max_pages=settings.max_pages)
+        logger.info(
+            "pdf_parsed filename=%s total_pages=%s processed_pages=%s",
+            file.filename,
+            result["total_pages"],
+            result["pages_processed"],
+        )
+        return result
     except Exception as exc:
+        logger.warning("pdf_parse_failed filename=%s", file.filename, exc_info=exc)
         raise HTTPException(status_code=422, detail="Unable to parse this PDF.") from exc
