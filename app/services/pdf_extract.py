@@ -42,7 +42,11 @@ def extract_pdf(content: bytes, max_pages: int = 10) -> dict[str, Any]:
             if block_type != 0 or not text.strip():
                 continue
             rect = fitz.Rect(x0, y0, x1, y1)
-            if any((rect & table_rect).get_area() > rect.get_area() * 0.5 for table_rect in table_regions):
+            overlaps_table = any(
+                (rect & table_rect).get_area() > rect.get_area() * 0.5
+                for table_rect in table_regions
+            )
+            if overlaps_table:
                 continue
             items.append({"type": "text", "bbox": _bbox(rect), "content": text.strip()})
 
