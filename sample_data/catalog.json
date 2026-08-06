@@ -1,0 +1,6 @@
+[
+  {"id":"DOC-001","title":"Secure Delivery Checklist","lifecycle_stages":["Plan","Build"],"topics":["Security","Delivery"],"effective_date":"2025-01-15","document_type":"guide","summary":"A synthetic checklist for secure delivery reviews."},
+  {"id":"DOC-002","title":"Quality Review Template","lifecycle_stages":["All"],"topics":["Quality"],"effective_date":"2025-06-01","document_type":"template","summary":"A generic quality review template for project teams."},
+  {"id":"DOC-003","title":"Operations Reference","lifecycle_stages":["Operate"],"topics":["All"],"effective_date":"2024-11-20","document_type":"reference","summary":"A synthetic operations reference with cross-topic applicability."},
+  {"id":"DOC-004","title":"Project Planning Policy","lifecycle_stages":["Plan"],"topics":["Delivery","Quality"],"effective_date":"2026-02-10","document_type":"policy","summary":"A public demo policy for planning and delivery readiness."}
+]
