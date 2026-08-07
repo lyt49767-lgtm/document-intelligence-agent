@@ -37,7 +37,7 @@ Agent routing        → select and execute the appropriate tool for a user ques
 - FastAPI API with OpenAPI documentation at `/docs`
 - Browser interface for agent questions, direct catalog search and PDF extraction
 - `/api/ask` endpoint that returns the route, tool calls and source citations
-- In-memory PDF processing with a 12 MB upload limit
+- In-memory PDF processing with a 12 MB Docker limit and a Vercel-safe 4 MB limit
 - Public synthetic catalog data only
 - Configuration through environment variables (`DOCUMENT_AGENT_*`)
 - API tests for PDF extraction and validation, plus Ruff and Mypy quality checks
@@ -87,19 +87,19 @@ curl -X POST http://localhost:8000/api/ask \
 
 ## Deployment
 
-The repository includes a `render.yaml` Blueprint for Render. It builds the Dockerfile, uses `/health` for health checks, and deploys automatically after GitHub Actions checks pass.
+The repository includes a Vercel entry point at `api/index.py` and routing configuration in `vercel.json`.
 
-1. Sign in to Render and create a Blueprint from this GitHub repository.
-2. Render detects `render.yaml`; review the generated `document-intelligence-agent` web service and create it.
-3. After the first deployment, open the generated `onrender.com` URL and verify `/health` and `/docs`.
+1. Sign in to Vercel with GitHub and import `lyt49767-lgtm/document-intelligence-agent`.
+2. Keep the detected framework settings and click **Deploy**.
+3. Open the generated `vercel.app` URL and verify `/health` and `/docs`.
 
-The Docker image also works on any Docker-compatible host and honors the platform-provided `PORT` value:
+Vercel Functions accept request bodies up to 4.5 MB, so the app automatically sets its Vercel upload limit to 4 MB. Docker deployments retain the 12 MB default. The Docker image also works on any Docker-compatible host and honors the platform-provided `PORT` value:
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-For a public deployment, keep the default upload limit, do not add internal PDFs, and use environment variables for any future model API key.
+For a public deployment, do not add internal PDFs, and use environment variables for any future model API key.
 
 ## Resume-ready summary
 
