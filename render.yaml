@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: document-intelligence-agent
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
