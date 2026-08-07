@@ -1,13 +1,7 @@
 {
   "functions": {
-    "api/index.py": {
+    "app/main.py": {
       "includeFiles": "app/static/**,sample_data/**"
     }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index"
-    }
-  ]
+  }
 }
