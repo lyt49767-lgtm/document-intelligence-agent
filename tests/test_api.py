@@ -1,6 +1,7 @@
 import fitz
 from fastapi.testclient import TestClient
 
+from api.index import app as vercel_app
 from app.main import app
 
 
@@ -20,6 +21,10 @@ def test_health_returns_ok() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_vercel_entrypoint_exports_the_application() -> None:
+    assert vercel_app is app
 
 
 def test_parse_extracts_text_from_pdf() -> None:
