@@ -8,6 +8,20 @@ A deployable document intelligence agent for traceable enterprise-knowledge retr
 
 It intentionally contains **no private documents, company names, credentials, customer data, or external model keys**. Uploaded PDFs are processed in memory and are not written to disk.
 
+## Architecture
+
+```mermaid
+flowchart TD
+    U["User question / optional PDF"] --> A["/api/ask Agent router"]
+    A -->|"stage, topic or search intent"| C["Catalog search tool"]
+    A -->|"uploaded PDF"| P["PDF extraction tool"]
+    C --> E["Structured document evidence"]
+    P --> E["Page-level text and table evidence"]
+    E --> R["Traceable response: route, tool calls, citations"]
+```
+
+The router is deliberately deterministic and model-independent: it remains inspectable and runnable without an API key, while leaving a clean integration point for an LLM or RAG layer.
+
 ## Why not use only RAG?
 
 Semantic RAG is useful for questions about what a document says. It is less reliable for strict filters such as "documents for the Build stage, related to Security, effective after a date." This service uses a lightweight, inspectable hybrid foundation:
@@ -73,13 +87,23 @@ curl -X POST http://localhost:8000/api/ask \
 
 ## Deployment
 
-The repository is ready for any Docker-compatible host. Configure the service command as:
+The repository includes a `render.yaml` Blueprint for Render. It builds the Dockerfile, uses `/health` for health checks, and deploys automatically after GitHub Actions checks pass.
+
+1. Sign in to Render and create a Blueprint from this GitHub repository.
+2. Render detects `render.yaml`; review the generated `document-intelligence-agent` web service and create it.
+3. After the first deployment, open the generated `onrender.com` URL and verify `/health` and `/docs`.
+
+The Docker image also works on any Docker-compatible host and honors the platform-provided `PORT` value:
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
 For a public deployment, keep the default upload limit, do not add internal PDFs, and use environment variables for any future model API key.
+
+## Resume-ready summary
+
+See the concise Chinese project description at [`docs/resume-project-description_zh.md`](docs/resume-project-description_zh.md).
 
 ## Scope and next steps
 
